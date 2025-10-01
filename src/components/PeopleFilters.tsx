@@ -1,7 +1,10 @@
+// 📦 Imports principais
 import React, { useEffect, useMemo, useState } from 'react';
 
+// 🔗 Constante base do hash
 const HASH_BASE = '#/people';
 
+// 🧩 Bloco utilitário: leitura dos parâmetros da URL
 function readSearchParamsFromHash(): URLSearchParams {
   try {
     const hash = window.location.hash || HASH_BASE;
@@ -13,13 +16,15 @@ function readSearchParamsFromHash(): URLSearchParams {
   }
 }
 
+// 🧩 Bloco utilitário: construção do hash atualizado
 function buildHash(params: URLSearchParams) {
   const qs = params.toString();
-
   return qs ? `${HASH_BASE}?${qs}` : HASH_BASE;
 }
 
+// 🎛️ Componente principal: PeopleFilters
 export const PeopleFilters: React.FC = () => {
+  // 🔧 Estados locais
   const [query, setQuery] = useState<string>(
     () => readSearchParamsFromHash().get('query') ?? '',
   );
@@ -30,6 +35,7 @@ export const PeopleFilters: React.FC = () => {
     readSearchParamsFromHash().getAll('centuries'),
   );
 
+  // 🔄 Bloco efeito: sincroniza estados quando o hash muda
   useEffect(() => {
     const onHashChange = () => {
       const params = readSearchParamsFromHash();
@@ -40,10 +46,10 @@ export const PeopleFilters: React.FC = () => {
     };
 
     window.addEventListener('hashchange', onHashChange);
-
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // 🔄 Bloco efeito: atualiza o hash quando estados mudam
   useEffect(() => {
     const params = readSearchParamsFromHash();
 
@@ -70,39 +76,38 @@ export const PeopleFilters: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, sex, centuries]);
 
+  // 🧩 Bloco helper: alternar século
   const toggleCentury = (c: string) => {
     setCenturies(prev => {
       const exists = prev.includes(c);
-
-      if (exists) {
-        return prev.filter(p => p !== c);
-      }
-
-      return [...prev, c];
+      return exists ? prev.filter(p => p !== c) : [...prev, c];
     });
   };
 
+  // 🧩 Bloco helper: resetar filtros
   const resetAll = () => {
     setQuery('');
     setSex(null);
     setCenturies([]);
   };
 
+  // 🧩 Bloco helper: set de séculos selecionados
   const centurySet = useMemo(() => new Set(centuries), [centuries]);
 
-  // helper to produce href that preserves other params
+  // 🧩 Bloco helper: gera href preservando parâmetros
   const hrefWith = (changes: (p: URLSearchParams) => void) => {
     const p = readSearchParamsFromHash();
-
     changes(p);
-
     return buildHash(p);
   };
 
+  // 🎨 Bloco render: JSX do painel de filtros
   return (
     <nav className="panel">
+      {/* Cabeçalho */}
       <p className="panel-heading">Filters</p>
 
+      {/* Filtro por sexo */}
       <p className="panel-tabs" data-cy="SexFilter">
         <a
           className={!sex ? 'is-active' : ''}
@@ -138,6 +143,7 @@ export const PeopleFilters: React.FC = () => {
         </a>
       </p>
 
+      {/* Campo de busca */}
       <div className="panel-block">
         <p className="control has-icons-left">
           <input
@@ -148,13 +154,13 @@ export const PeopleFilters: React.FC = () => {
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
-
           <span className="icon is-left">
             <i className="fas fa-search" aria-hidden="true" />
           </span>
         </p>
       </div>
 
+      {/* Filtro por séculos */}
       <div className="panel-block">
         <div className="level is-flex-grow-1 is-mobile" data-cy="CenturyFilter">
           <div className="level-left">
@@ -169,7 +175,6 @@ export const PeopleFilters: React.FC = () => {
 
                   p.delete('centuries');
                   if (willSelect) {
-                    // append selected first to keep predictable order
                     p.append('centuries', c);
                     current
                       .filter(x => x !== c)
@@ -190,10 +195,11 @@ export const PeopleFilters: React.FC = () => {
             ))}
           </div>
 
+          {/* Botão All (verde, sem hover) */}
           <div className="level-right ml-4">
             <a
               data-cy="centuryALL"
-              className="button is-success is-outlined"
+              className="button is-success no-hover"
               href={hrefWith(p => p.delete('centuries'))}
               onClick={e => {
                 e.preventDefault();
@@ -206,6 +212,7 @@ export const PeopleFilters: React.FC = () => {
         </div>
       </div>
 
+      {/* Reset geral */}
       <div className="panel-block">
         <a
           className="button is-link is-outlined is-fullwidth"
