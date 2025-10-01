@@ -1,16 +1,122 @@
-export const PeopleFilters = () => {
+import React, { useEffect, useMemo, useState } from 'react';
+
+const HASH_BASE = '#/people';
+
+function readSearchParamsFromHash(): URLSearchParams {
+  try {
+    const hash = window.location.hash || HASH_BASE;
+    const idx = hash.indexOf('?');
+    return new URLSearchParams(idx === -1 ? '' : hash.slice(idx));
+  } catch {
+    return new URLSearchParams();
+  }
+}
+
+function buildHash(params: URLSearchParams) {
+  const qs = params.toString();
+  return qs ? `${HASH_BASE}?${qs}` : HASH_BASE;
+}
+
+export const PeopleFilters: React.FC = () => {
+  const [query, setQuery] = useState<string>(
+    () => readSearchParamsFromHash().get('query') ?? '',
+  );
+  const [sex, setSex] = useState<string | null>(() =>
+    readSearchParamsFromHash().get('sex'),
+  );
+  const [centuries, setCenturies] = useState<string[]>(() =>
+    readSearchParamsFromHash().getAll('centuries'),
+  );
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const params = readSearchParamsFromHash();
+      setQuery(params.get('query') ?? '');
+      setSex(params.get('sex'));
+      setCenturies(params.getAll('centuries'));
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  useEffect(() => {
+    const params = readSearchParamsFromHash();
+
+    if (query.trim() === '') params.delete('query');
+    else params.set('query', query.trim());
+
+    if (sex == null) params.delete('sex');
+    else params.set('sex', sex);
+
+    params.delete('centuries');
+    centuries.forEach(c => params.append('centuries', c));
+
+    const newHash = buildHash(params);
+    if (newHash !== window.location.hash) {
+      history.replaceState(null, '', newHash);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, sex, centuries]);
+
+  const toggleCentury = (c: string) => {
+    setCenturies(prev => {
+      const exists = prev.includes(c);
+      if (exists) return prev.filter(p => p !== c);
+      return [...prev, c];
+    });
+  };
+
+  const resetAll = () => {
+    setQuery('');
+    setSex(null);
+    setCenturies([]);
+  };
+
+  const centurySet = useMemo(() => new Set(centuries), [centuries]);
+
+  // helper to produce href that preserves other params
+  const hrefWith = (changes: (p: URLSearchParams) => void) => {
+    const p = readSearchParamsFromHash();
+    changes(p);
+    return buildHash(p);
+  };
+
   return (
     <nav className="panel">
       <p className="panel-heading">Filters</p>
 
       <p className="panel-tabs" data-cy="SexFilter">
-        <a className="is-active" href="#/people">
+        <a
+          className={!sex ? 'is-active' : ''}
+          href={hrefWith(p => p.delete('sex'))}
+          onClick={e => {
+            e.preventDefault();
+            setSex(null);
+          }}
+        >
           All
         </a>
-        <a className="" href="#/people?sex=m">
+
+        <a
+          className={sex === 'm' ? 'is-active' : ''}
+          href={hrefWith(p => p.set('sex', 'm'))}
+          onClick={e => {
+            e.preventDefault();
+            setSex('m');
+          }}
+        >
           Male
         </a>
-        <a className="" href="#/people?sex=f">
+
+        <a
+          className={sex === 'f' ? 'is-active' : ''}
+          href={hrefWith(p => p.set('sex', 'f'))}
+          onClick={e => {
+            e.preventDefault();
+            setSex('f');
+          }}
+        >
           Female
         </a>
       </p>
@@ -22,6 +128,8 @@ export const PeopleFilters = () => {
             type="search"
             className="input"
             placeholder="Search"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
           />
 
           <span className="icon is-left">
@@ -33,52 +141,46 @@ export const PeopleFilters = () => {
       <div className="panel-block">
         <div className="level is-flex-grow-1 is-mobile" data-cy="CenturyFilter">
           <div className="level-left">
-            <a
-              data-cy="century"
-              className="button mr-1"
-              href="#/people?centuries=16"
-            >
-              16
-            </a>
-
-            <a
-              data-cy="century"
-              className="button mr-1 is-info"
-              href="#/people?centuries=17"
-            >
-              17
-            </a>
-
-            <a
-              data-cy="century"
-              className="button mr-1 is-info"
-              href="#/people?centuries=18"
-            >
-              18
-            </a>
-
-            <a
-              data-cy="century"
-              className="button mr-1 is-info"
-              href="#/people?centuries=19"
-            >
-              19
-            </a>
-
-            <a
-              data-cy="century"
-              className="button mr-1"
-              href="#/people?centuries=20"
-            >
-              20
-            </a>
+            {['16', '17', '18', '19', '20'].map(c => (
+              <a
+                key={c}
+                data-cy="century"
+                className={`button mr-1 ${centurySet.has(c) ? 'is-info' : ''}`}
+                href={hrefWith(p => {
+                  const current = p.getAll('centuries');
+                  const willSelect = !current.includes(c);
+                  p.delete('centuries');
+                  if (willSelect) {
+                    // append selected first to keep predictable order
+                    p.append('centuries', c);
+                    current
+                      .filter(x => x !== c)
+                      .forEach(x => p.append('centuries', x));
+                  } else {
+                    current
+                      .filter(x => x !== c)
+                      .forEach(x => p.append('centuries', x));
+                  }
+                })}
+                onClick={e => {
+                  e.preventDefault();
+                  toggleCentury(c);
+                }}
+              >
+                {c}
+              </a>
+            ))}
           </div>
 
           <div className="level-right ml-4">
             <a
               data-cy="centuryALL"
               className="button is-success is-outlined"
-              href="#/people"
+              href={hrefWith(p => p.delete('centuries'))}
+              onClick={e => {
+                e.preventDefault();
+                setCenturies([]);
+              }}
             >
               All
             </a>
@@ -87,7 +189,14 @@ export const PeopleFilters = () => {
       </div>
 
       <div className="panel-block">
-        <a className="button is-link is-outlined is-fullwidth" href="#/people">
+        <a
+          className="button is-link is-outlined is-fullwidth"
+          href={HASH_BASE}
+          onClick={e => {
+            e.preventDefault();
+            resetAll();
+          }}
+        >
           Reset all filters
         </a>
       </div>
