@@ -15,9 +15,9 @@ export const PeoplePage: React.FC<Props> = ({ people, loading, error }) => {
     <>
       <h1 className="title">People Page</h1>
 
-      <div className="columns">
+      <div className="columns is-multiline">
         {/* Coluna principal com a tabela */}
-        <div className="column is-three-quarters">
+        <div className="column is-12-mobile is-12-tablet is-8-desktop">
           <div className="box table-container">
             {loading && <Loader />}
 
@@ -34,9 +34,9 @@ export const PeoplePage: React.FC<Props> = ({ people, loading, error }) => {
           </div>
         </div>
 
-        {/* Coluna lateral com os filtros (só aparece se people estiver carregado) */}
+        {/* Coluna lateral com os filtros */}
         {people && (
-          <div className="column">
+          <div className="column is-12-mobile is-12-tablet is-4-desktop">
             <PeopleFilters />
           </div>
         )}

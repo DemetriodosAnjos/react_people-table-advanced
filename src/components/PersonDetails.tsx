@@ -33,8 +33,12 @@ export const PersonDetails: React.FC<Props> = ({ people }) => {
   };
 
   const linkToPersonSlug = (name: string | null) => {
-    if (!name) return null;
+    if (!name) {
+      return null;
+    }
+
     const found = people.find(p => p.name === name);
+
     return found ? `/people/${found.slug}` : null;
   };
 

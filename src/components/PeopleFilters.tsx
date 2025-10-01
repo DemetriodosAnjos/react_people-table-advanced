@@ -6,6 +6,7 @@ function readSearchParamsFromHash(): URLSearchParams {
   try {
     const hash = window.location.hash || HASH_BASE;
     const idx = hash.indexOf('?');
+
     return new URLSearchParams(idx === -1 ? '' : hash.slice(idx));
   } catch {
     return new URLSearchParams();
@@ -14,6 +15,7 @@ function readSearchParamsFromHash(): URLSearchParams {
 
 function buildHash(params: URLSearchParams) {
   const qs = params.toString();
+
   return qs ? `${HASH_BASE}?${qs}` : HASH_BASE;
 }
 
@@ -31,28 +33,37 @@ export const PeopleFilters: React.FC = () => {
   useEffect(() => {
     const onHashChange = () => {
       const params = readSearchParamsFromHash();
+
       setQuery(params.get('query') ?? '');
       setSex(params.get('sex'));
       setCenturies(params.getAll('centuries'));
     };
 
     window.addEventListener('hashchange', onHashChange);
+
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   useEffect(() => {
     const params = readSearchParamsFromHash();
 
-    if (query.trim() === '') params.delete('query');
-    else params.set('query', query.trim());
+    if (query.trim() === '') {
+      params.delete('query');
+    } else {
+      params.set('query', query.trim());
+    }
 
-    if (sex == null) params.delete('sex');
-    else params.set('sex', sex);
+    if (sex == null) {
+      params.delete('sex');
+    } else {
+      params.set('sex', sex);
+    }
 
     params.delete('centuries');
     centuries.forEach(c => params.append('centuries', c));
 
     const newHash = buildHash(params);
+
     if (newHash !== window.location.hash) {
       history.replaceState(null, '', newHash);
     }
@@ -62,7 +73,11 @@ export const PeopleFilters: React.FC = () => {
   const toggleCentury = (c: string) => {
     setCenturies(prev => {
       const exists = prev.includes(c);
-      if (exists) return prev.filter(p => p !== c);
+
+      if (exists) {
+        return prev.filter(p => p !== c);
+      }
+
       return [...prev, c];
     });
   };
@@ -78,7 +93,9 @@ export const PeopleFilters: React.FC = () => {
   // helper to produce href that preserves other params
   const hrefWith = (changes: (p: URLSearchParams) => void) => {
     const p = readSearchParamsFromHash();
+
     changes(p);
+
     return buildHash(p);
   };
 
@@ -149,6 +166,7 @@ export const PeopleFilters: React.FC = () => {
                 href={hrefWith(p => {
                   const current = p.getAll('centuries');
                   const willSelect = !current.includes(c);
+
                   p.delete('centuries');
                   if (willSelect) {
                     // append selected first to keep predictable order

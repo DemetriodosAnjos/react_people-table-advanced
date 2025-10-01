@@ -13,6 +13,7 @@ function readSearchParamsFromHash(): URLSearchParams {
   try {
     const hash = window.location.hash || '#/people';
     const idx = hash.indexOf('?');
+
     return new URLSearchParams(idx === -1 ? '' : hash.slice(idx));
   } catch {
     return new URLSearchParams();
@@ -23,6 +24,7 @@ function currentQueryString(): string {
   try {
     const hash = window.location.hash || '#/people';
     const idx = hash.indexOf('?');
+
     return idx === -1 ? '' : hash.slice(idx);
   } catch {
     return '';
@@ -35,9 +37,11 @@ function currentSelectedSlugFromHash(): string | null {
     const path = hash.split('?')[0];
     const parts = path.split('/').filter(Boolean);
     const peopleIndex = parts.indexOf('people');
+
     if (peopleIndex !== -1 && parts.length > peopleIndex + 1) {
       return parts[peopleIndex + 1];
     }
+
     return null;
   } catch {
     return null;
@@ -63,8 +67,10 @@ export const PeopleTable: React.FC<Props> = ({ people, loading, error }) => {
 
   useEffect(() => {
     const onHash = () => setHashState(window.location.hash);
+
     window.addEventListener('hashchange', onHash);
     window.addEventListener('popstate', onHash);
+
     return () => {
       window.removeEventListener('hashchange', onHash);
       window.removeEventListener('popstate', onHash);
@@ -79,7 +85,9 @@ export const PeopleTable: React.FC<Props> = ({ people, loading, error }) => {
   const selectedSlug = currentSelectedSlugFromHash();
 
   const filteredPeople = useMemo(() => {
-    if (!people) return [];
+    if (!people) {
+      return [];
+    }
 
     const includes = (s?: string | null) =>
       (s ?? '').toString().toLowerCase().includes(query);
@@ -104,7 +112,9 @@ export const PeopleTable: React.FC<Props> = ({ people, loading, error }) => {
     const sortField = params.get('sort');
     const sortOrder = params.get('order') === 'desc' ? 'desc' : 'asc';
 
-    if (!sortField) return filtered;
+    if (!sortField) {
+      return filtered;
+    }
 
     return [...filtered].sort((a, b) => {
       const getValue = (person: Person) => {
@@ -195,6 +205,7 @@ Conexões: usa o BLOCO CONST para filtros/ordenadores e o BLOCO TR/TD para linha
           }
 
           const newHash = `#/people?${newParams.toString()}`;
+
           history.replaceState(null, '', newHash);
           window.dispatchEvent(new PopStateEvent('popstate'));
         }}

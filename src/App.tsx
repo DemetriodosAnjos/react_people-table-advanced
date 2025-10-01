@@ -18,17 +18,24 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
+
     setLoading(true);
     setError(null);
 
     getPeople()
       .then(data => {
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
+
         setPeople(data);
         setLoading(false);
       })
       .catch(err => {
-        if (!mounted) return;
+        if (!mounted) {
+          return;
+        }
+
         setError(String(err || 'Error fetching people'));
         setLoading(false);
       });
