@@ -1,4 +1,3 @@
-// src/components/PeopleTable.tsx
 import React, { useMemo, useEffect, useState } from 'react';
 import { Person } from '../types/Person';
 import './PeopleTable.scss';
@@ -18,7 +17,7 @@ type Props = {
 };
 
 function currentSelectedSlugFromHash(): string | null {
-  const hash = window.location.hash || '';
+  const hash = typeof window !== 'undefined' ? window.location.hash : '';
   const cleanHash = hash.split('?')[0]; // remove query params
   const parts = cleanHash.split('/');
 
@@ -80,7 +79,16 @@ export const PeopleTable: React.FC<Props> = ({
 
   useEffect(() => {
     const onHashChange = () => {
-      setSelectedSlug(currentSelectedSlugFromHash());
+      const fromHash = currentSelectedSlugFromHash();
+
+      /*console.log(
+        '[HASH_CHANGE]',
+        'window.location.hash=',
+        typeof window !== 'undefined' ? window.location.hash : '',
+        'slugFromHash=',
+        fromHash,
+      );*/
+      setSelectedSlug(fromHash);
     };
 
     window.addEventListener('hashchange', onHashChange);
@@ -88,9 +96,19 @@ export const PeopleTable: React.FC<Props> = ({
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // sincronização inicial garantida no mount
+  // garantia de sincronização inicial em todos os ambientes (mantém a lógica original)
   useEffect(() => {
-    setSelectedSlug(currentSelectedSlugFromHash());
+    const slug = currentSelectedSlugFromHash();
+
+    /*console.log(
+      '[MOUNT]',
+      'window.location.hash=',
+      typeof window !== 'undefined' ? window.location.hash : '',
+      'initialSlug=',
+      slug,
+    );*/
+    setSelectedSlug(slug);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // quando os dados chegam, garantir que selectedSlug reflita a URL atual (resolve timing)
@@ -98,10 +116,20 @@ export const PeopleTable: React.FC<Props> = ({
     if (people && people.length) {
       const slugFromHash = currentSelectedSlugFromHash();
 
+      /* console.log(
+        '[PEOPLE ARRIVED]',
+        'selectedSlug(before)=',
+        selectedSlug,
+        'slugFromHash=',
+        slugFromHash,
+        'peopleSlugs=',
+        people.map(p => p.slug).slice(0, 20),
+      );*/
       if (slugFromHash) {
         setSelectedSlug(slugFromHash);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people]);
 
   // leitura de params / definição de sortField e sortOrder
@@ -119,6 +147,16 @@ export const PeopleTable: React.FC<Props> = ({
 
   const normalize = (s: unknown) =>
     s === null || s === undefined ? null : String(s).trim();
+
+  /*console.log(
+    '[RENDER]',
+    'selectedSlug=',
+    selectedSlug,
+    'hash=',
+    typeof window !== 'undefined' ? window.location.hash : '',
+    'peopleCount=',
+    people?.length ?? 0,
+  );*/
 
   const filteredPeople = useMemo(() => {
     if (!people) {
