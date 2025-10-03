@@ -1,7 +1,10 @@
+// src/components/Navbar.tsx
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 export const Navbar: React.FC = () => {
+  const location = useLocation();
+
   return (
     <nav
       className="navbar"
@@ -26,7 +29,7 @@ export const Navbar: React.FC = () => {
           </NavLink>
 
           <NavLink
-            to="/people"
+            to={`/people${location.search}`}
             end
             className={({ isActive }) =>
               `navbar-item${isActive ? ' has-background-grey-lighter' : ''}`

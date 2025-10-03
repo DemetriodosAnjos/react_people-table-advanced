@@ -1,4 +1,3 @@
-// SortHeader.tsx
 import React from 'react';
 
 type Props = {
@@ -6,7 +5,7 @@ type Props = {
   label: string;
   sortField: string | null;
   sortOrder: 'asc' | 'desc' | null;
-  applySortExplicit: (field: string, order: 'asc' | 'desc') => void;
+  applySortExplicit: (field: string) => void;
 };
 
 export const SortHeader: React.FC<Props> = ({
@@ -16,11 +15,28 @@ export const SortHeader: React.FC<Props> = ({
   sortOrder,
   applySortExplicit,
 }) => {
-  const showUp = sortField !== field || sortOrder === 'desc';
-  const showDown = sortField !== field || sortOrder === 'asc';
+  const isSorted = sortField === field;
+  const isAsc = isSorted && sortOrder === 'asc';
+  const isDesc = isSorted && sortOrder === 'desc';
+
+  // sempre mostrar ícones; marque ativo com classes has-sort-up/has-sort-down
+  const headerClass = `is-clickable has-sort${isAsc ? ' has-sort-up' : ''}${
+    isDesc ? ' has-sort-down' : ''
+  }`;
+
+  const handleKey = (e: React.KeyboardEvent, fn: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fn();
+    }
+  };
 
   return (
-    <th>
+    <th
+      className={headerClass}
+      role="button"
+      aria-sort={isSorted ? (isAsc ? 'ascending' : 'descending') : 'none'}
+    >
       <span
         className="is-flex is-align-items-center nowrap"
         style={{ whiteSpace: 'nowrap' }}
@@ -31,39 +47,29 @@ export const SortHeader: React.FC<Props> = ({
           className="icon has-text-link ml-1 sort-icons-match-born"
           aria-hidden="false"
         >
-          {showUp && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={() => applySortExplicit(field, 'asc')}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  applySortExplicit(field, 'asc');
-                }
-              }}
-              aria-label={`sort-${field}-asc`}
-              className="sort-icon-item"
-            >
-              <i className="fas fa-sort-up" style={{ marginLeft: -10 }} />
-            </span>
-          )}
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={() => applySortExplicit(field)}
+            onKeyDown={e => handleKey(e, () => applySortExplicit(field))}
+            aria-label={`sort-${field}-asc`}
+            className="sort-icon-item"
+            title="Sort ascending"
+          >
+            <i className="fas fa-sort-up" style={{ marginLeft: -10 }} />
+          </span>
 
-          {showDown && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={() => applySortExplicit(field, 'desc')}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  applySortExplicit(field, 'desc');
-                }
-              }}
-              aria-label={`sort-${field}-desc`}
-              className="sort-icon-item"
-            >
-              <i className="fas fa-sort-down" style={{ marginLeft: -10 }} />
-            </span>
-          )}
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={() => applySortExplicit(field)}
+            onKeyDown={e => handleKey(e, () => applySortExplicit(field))}
+            aria-label={`sort-${field}-desc`}
+            className="sort-icon-item"
+            title="Sort descending"
+          >
+            <i className="fas fa-sort-down" style={{ marginLeft: -10 }} />
+          </span>
         </span>
       </span>
     </th>

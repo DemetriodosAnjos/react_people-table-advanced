@@ -2,6 +2,10 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { Person } from '../types/Person';
 import './PeopleTable.scss';
 import { SortHeader } from './SortHeader';
+import {
+  readSearchParamsFromHash,
+  buildPeopleHashFromParams,
+} from '../utils/hash';
 
 type Props = {
   people: Person[] | null;
@@ -12,74 +16,55 @@ type Props = {
   centuryFilters: string[];
 };
 
-// 🔧 Funções utilitárias locais
-function readSearchParamsFromHash(): URLSearchParams {
-  try {
-    const hash = window.location.hash || '';
-    const idx = hash.indexOf('?');
-
-    return new URLSearchParams(idx === -1 ? '' : hash.slice(idx));
-  } catch {
-    return new URLSearchParams();
-  }
-}
-
-// Retorna selected do query string se presente; mantém compatibilidade com /people/:slug
 function currentSelectedSlugFromHash(): string | null {
-  const hash = window.location.hash || '';
-  const cleanHash = hash.split('?')[0]; // remove query params
+  const hash = typeof window !== 'undefined' ? window.location.hash : '';
+  const cleanHash = hash.split('?')[0];
   const parts = cleanHash.split('/');
 
-  // PRIORIZA slug em /people/<slug>
   if (parts.length > 2 && parts[1] === 'people') {
-    return parts[2];
+    return parts[2] || null;
   }
 
-  // fallback para query param selected (compatibilidade)
   const params = readSearchParamsFromHash();
 
   return params.get('selected');
 }
 
-function applySortExplicit(field: string, orderClicked: 'asc' | 'desc') {
+function applySortExplicit(field: string) {
   const params = readSearchParamsFromHash();
   const currentField = params.get('sort');
-  const orderParam = params.get('order');
-  const currentOrder =
-    orderParam === 'desc' ? 'desc' : orderParam === 'asc' ? 'asc' : null;
-  const currentCycle = Number(params.get('sortCycle') || '0');
+  const currentOrder = params.get('order');
 
-  if (currentField === field && currentCycle >= 2) {
-    params.delete('sort');
-    params.delete('order');
-    params.delete('sortCycle');
-  } else if (currentField !== field) {
+  if (currentField !== field) {
+    // trocar de campo: set sort=<field> e remover order (interpreted as asc)
     params.set('sort', field);
-    params.set('order', orderClicked);
-    params.set('sortCycle', '1');
+    params.delete('order');
   } else {
-    if (currentOrder === null) {
-      params.set('order', orderClicked);
-      params.set('sortCycle', '1');
-    } else if (currentOrder !== orderClicked) {
-      params.set('order', orderClicked);
-      params.set('sortCycle', String(Math.min(currentCycle + 1, 2)));
+    // mesmo campo
+    if (!currentOrder) {
+      // sem order -> definir order=desc
+      params.set('order', 'desc');
+    } else if (currentOrder === 'desc') {
+      // order=desc -> limpar sort e order
+      params.delete('sort');
+      params.delete('order');
     } else {
-      params.set('order', orderClicked);
-      params.set('sortCycle', String(Math.min(currentCycle + 1, 2)));
+      // caso improvável order='asc' explícito -> ir para desc
+      params.set('order', 'desc');
     }
   }
 
-  const qs = params.toString();
-  const newHash = qs ? `#/people?${qs}` : '#/people';
+  // remover resquícios de sortCycle se existirem
+  params.delete('sortCycle');
 
-  if (newHash !== window.location.hash) {
+  const newHash = buildPeopleHashFromParams(params);
+
+  if (newHash !== (typeof window !== 'undefined' ? window.location.hash : '')) {
     history.replaceState(null, '', newHash);
     window.dispatchEvent(new HashChangeEvent('hashchange'));
   }
 }
 
-// ⬇️ Componente principal
 export const PeopleTable: React.FC<Props> = ({
   people,
   sexFilter,
@@ -100,11 +85,18 @@ export const PeopleTable: React.FC<Props> = ({
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // leitura de params / definição de sortField e sortOrder
   const params = readSearchParamsFromHash();
   const sortField = params.get('sort');
   const orderParam = params.get('order');
   const sortOrder: 'asc' | 'desc' | null =
-    orderParam === 'desc' ? 'desc' : orderParam === 'asc' ? 'asc' : null;
+    sortField && !orderParam
+      ? 'asc'
+      : orderParam === 'desc'
+        ? 'desc'
+        : orderParam === 'asc'
+          ? 'asc'
+          : null;
 
   const filteredPeople = useMemo(() => {
     if (!people) {
@@ -165,12 +157,12 @@ export const PeopleTable: React.FC<Props> = ({
       const bVal = getValue(b);
 
       if (typeof aVal === 'number' && typeof bVal === 'number') {
-        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+        return sortOrder === 'desc' ? bVal - aVal : aVal - bVal;
       }
 
-      return sortOrder === 'asc'
-        ? String(aVal).localeCompare(String(bVal))
-        : String(bVal).localeCompare(String(aVal));
+      return sortOrder === 'desc'
+        ? String(bVal).localeCompare(String(aVal))
+        : String(aVal).localeCompare(String(bVal));
     });
   }, [people, query, sexFilter, centuryFilters, sortField, sortOrder]);
 
@@ -188,9 +180,13 @@ export const PeopleTable: React.FC<Props> = ({
             sortOrder={sortOrder}
             applySortExplicit={applySortExplicit}
           />
-          <th>
-            <span className="is-flex is-align-items-center nowrap">Sex</span>
-          </th>
+          <SortHeader
+            field="sex"
+            label="Sex"
+            sortField={sortField}
+            sortOrder={sortOrder}
+            applySortExplicit={applySortExplicit}
+          />
           <SortHeader
             field="born"
             label="Born"
@@ -223,7 +219,6 @@ export const PeopleTable: React.FC<Props> = ({
           const isFemale = sexRaw.startsWith('f');
           const isMale = sexRaw.startsWith('m');
 
-          // Nome mantém cor por sexo; quando selecionado, linha inteira recebe is-selected (fundo)
           const nameClass = isFemale
             ? 'has-text-danger'
             : isMale
@@ -249,10 +244,7 @@ export const PeopleTable: React.FC<Props> = ({
                       ? `#/people/${person.slug}?${qs}`
                       : `#/people/${person.slug}`;
 
-                    // atualiza URL sem acionar o router que renderiza a outra página
                     history.replaceState(null, '', newHash);
-
-                    // atualiza o estado local para destacar a linha imediatamente
                     setSelectedSlug(person.slug);
                   }}
                 >
