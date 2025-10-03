@@ -1,3 +1,4 @@
+// src/components/PeopleTable.tsx
 import React, { useMemo, useEffect, useState } from 'react';
 import { Person } from '../types/Person';
 import './PeopleTable.scss';
@@ -17,14 +18,16 @@ type Props = {
 };
 
 function currentSelectedSlugFromHash(): string | null {
-  const hash = typeof window !== 'undefined' ? window.location.hash : '';
-  const cleanHash = hash.split('?')[0];
+  const hash = window.location.hash || '';
+  const cleanHash = hash.split('?')[0]; // remove query params
   const parts = cleanHash.split('/');
 
+  // PRIORIZA slug em /people/<slug>
   if (parts.length > 2 && parts[1] === 'people') {
-    return parts[2] || null;
+    return parts[2];
   }
 
+  // fallback para query param selected (compatibilidade)
   const params = readSearchParamsFromHash();
 
   return params.get('selected');
@@ -85,6 +88,22 @@ export const PeopleTable: React.FC<Props> = ({
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // sincronização inicial garantida no mount
+  useEffect(() => {
+    setSelectedSlug(currentSelectedSlugFromHash());
+  }, []);
+
+  // quando os dados chegam, garantir que selectedSlug reflita a URL atual (resolve timing)
+  useEffect(() => {
+    if (people && people.length) {
+      const slugFromHash = currentSelectedSlugFromHash();
+
+      if (slugFromHash) {
+        setSelectedSlug(slugFromHash);
+      }
+    }
+  }, [people]);
+
   // leitura de params / definição de sortField e sortOrder
   const params = readSearchParamsFromHash();
   const sortField = params.get('sort');
@@ -97,6 +116,9 @@ export const PeopleTable: React.FC<Props> = ({
         : orderParam === 'asc'
           ? 'asc'
           : null;
+
+  const normalize = (s: unknown) =>
+    s === null || s === undefined ? null : String(s).trim();
 
   const filteredPeople = useMemo(() => {
     if (!people) {
@@ -213,7 +235,11 @@ export const PeopleTable: React.FC<Props> = ({
       <tbody>
         {filteredPeople.map((person, idx) => {
           const key = person.id ?? person.slug ?? `person-${idx}`;
-          const isSelected = selectedSlug === person.slug;
+
+          // comparação normalizada (não altera parsing/URL)
+          const isSelected =
+            normalize(selectedSlug) !== null &&
+            normalize(selectedSlug) === normalize(person.slug);
 
           const sexRaw = (person.sex ?? '').toString().trim().toLowerCase();
           const isFemale = sexRaw.startsWith('f');
