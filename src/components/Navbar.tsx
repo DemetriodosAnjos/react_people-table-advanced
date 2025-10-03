@@ -9,28 +9,33 @@ export const Navbar: React.FC = () => {
       aria-label="main navigation"
       data-cy="nav"
     >
-      <div className="navbar-brand">
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) =>
-            `navbar-item${isActive ? ' has-background-grey-lighter' : ''}`
-          }
-          data-cy="nav-home"
-        >
-          Home
-        </NavLink>
+      <div
+        className="box mb-4"
+        style={{ margin: '0', padding: '0 40px', width: '100%' }}
+      >
+        <div className="navbar-brand">
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              `navbar-item${isActive ? ' has-background-grey-lighter' : ''}`
+            }
+            data-cy="nav-home"
+          >
+            Home
+          </NavLink>
 
-        <NavLink
-          to="/people"
-          end
-          className={({ isActive }) =>
-            `navbar-item${isActive ? ' has-background-grey-lighter' : ''}`
-          }
-          data-cy="nav-people"
-        >
-          People
-        </NavLink>
+          <NavLink
+            to="/people"
+            end
+            className={({ isActive }) =>
+              `navbar-item${isActive ? ' has-background-grey-lighter' : ''}`
+            }
+            data-cy="nav-people"
+          >
+            People
+          </NavLink>
+        </div>
       </div>
     </nav>
   );

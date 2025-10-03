@@ -6,7 +6,7 @@ import { Person } from './types/Person';
 
 import { Navbar } from './components/Navbar';
 import { PeoplePage } from './components/PeoplePage';
-import { PersonDetails } from './components/PersonDetails';
+
 import { Home } from './components/Home';
 
 import './App.scss';
@@ -62,7 +62,9 @@ export const App: React.FC = () => {
             />
             <Route
               path="/people/:slug"
-              element={<PersonDetails people={people} />}
+              element={
+                <PeoplePage people={people} loading={loading} error={error} />
+              }
             />
             <Route
               path="*"

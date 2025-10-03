@@ -19,6 +19,7 @@ function readSearchParamsFromHash(): URLSearchParams {
 // 🧩 Bloco utilitário: construção do hash atualizado
 function buildHash(params: URLSearchParams) {
   const qs = params.toString();
+
   return qs ? `${HASH_BASE}?${qs}` : HASH_BASE;
 }
 
@@ -46,6 +47,8 @@ export const PeopleFilters: React.FC = () => {
     };
 
     window.addEventListener('hashchange', onHashChange);
+    onHashChange(); // inicializa
+
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
@@ -72,14 +75,15 @@ export const PeopleFilters: React.FC = () => {
 
     if (newHash !== window.location.hash) {
       history.replaceState(null, '', newHash);
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, sex, centuries]);
 
   // 🧩 Bloco helper: alternar século
   const toggleCentury = (c: string) => {
     setCenturies(prev => {
       const exists = prev.includes(c);
+
       return exists ? prev.filter(p => p !== c) : [...prev, c];
     });
   };
@@ -97,7 +101,9 @@ export const PeopleFilters: React.FC = () => {
   // 🧩 Bloco helper: gera href preservando parâmetros
   const hrefWith = (changes: (p: URLSearchParams) => void) => {
     const p = readSearchParamsFromHash();
+
     changes(p);
+
     return buildHash(p);
   };
 
@@ -119,7 +125,6 @@ export const PeopleFilters: React.FC = () => {
         >
           All
         </a>
-
         <a
           className={sex === 'm' ? 'is-active' : ''}
           href={hrefWith(p => p.set('sex', 'm'))}
@@ -130,7 +135,6 @@ export const PeopleFilters: React.FC = () => {
         >
           Male
         </a>
-
         <a
           className={sex === 'f' ? 'is-active' : ''}
           href={hrefWith(p => p.set('sex', 'f'))}
@@ -195,8 +199,8 @@ export const PeopleFilters: React.FC = () => {
             ))}
           </div>
 
-          {/* Botão All (verde, sem hover) */}
-          <div className="level-right ml-4">
+          {/* Botão All */}
+          <div className="level-right ml-1">
             <a
               data-cy="centuryALL"
               className="button is-success no-hover"
