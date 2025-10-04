@@ -1,31 +1,10 @@
-// 📦 Imports principais
 import React, { useEffect, useMemo, useState } from 'react';
+import {
+  readSearchParamsFromHash,
+  buildPeopleHashFromParams,
+} from '../utils/hash';
 
-// 🔗 Constante base do hash
-const HASH_BASE = '#/people';
-
-// 🧩 Bloco utilitário: leitura dos parâmetros da URL
-function readSearchParamsFromHash(): URLSearchParams {
-  try {
-    const hash = window.location.hash || HASH_BASE;
-    const idx = hash.indexOf('?');
-
-    return new URLSearchParams(idx === -1 ? '' : hash.slice(idx));
-  } catch {
-    return new URLSearchParams();
-  }
-}
-
-// 🧩 Bloco utilitário: construção do hash atualizado
-function buildHash(params: URLSearchParams) {
-  const qs = params.toString();
-
-  return qs ? `${HASH_BASE}?${qs}` : HASH_BASE;
-}
-
-// 🎛️ Componente principal: PeopleFilters
 export const PeopleFilters: React.FC = () => {
-  // 🔧 Estados locais
   const [query, setQuery] = useState<string>(
     () => readSearchParamsFromHash().get('query') ?? '',
   );
@@ -36,7 +15,6 @@ export const PeopleFilters: React.FC = () => {
     readSearchParamsFromHash().getAll('centuries'),
   );
 
-  // 🔄 Bloco efeito: sincroniza estados quando o hash muda
   useEffect(() => {
     const onHashChange = () => {
       const params = readSearchParamsFromHash();
@@ -47,12 +25,11 @@ export const PeopleFilters: React.FC = () => {
     };
 
     window.addEventListener('hashchange', onHashChange);
-    onHashChange(); // inicializa
+    onHashChange();
 
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // 🔄 Bloco efeito: atualiza o hash quando estados mudam
   useEffect(() => {
     const params = readSearchParamsFromHash();
 
@@ -71,7 +48,8 @@ export const PeopleFilters: React.FC = () => {
     params.delete('centuries');
     centuries.forEach(c => params.append('centuries', c));
 
-    const newHash = buildHash(params);
+    // buildPeopleHashFromParams garante remoção de sortCycle e preserva slug quando aplicável
+    const newHash = buildPeopleHashFromParams(params);
 
     if (newHash !== window.location.hash) {
       history.replaceState(null, '', newHash);
@@ -79,7 +57,6 @@ export const PeopleFilters: React.FC = () => {
     }
   }, [query, sex, centuries]);
 
-  // 🧩 Bloco helper: alternar século
   const toggleCentury = (c: string) => {
     setCenturies(prev => {
       const exists = prev.includes(c);
@@ -88,32 +65,26 @@ export const PeopleFilters: React.FC = () => {
     });
   };
 
-  // 🧩 Bloco helper: resetar filtros
   const resetAll = () => {
     setQuery('');
     setSex(null);
     setCenturies([]);
   };
 
-  // 🧩 Bloco helper: set de séculos selecionados
   const centurySet = useMemo(() => new Set(centuries), [centuries]);
 
-  // 🧩 Bloco helper: gera href preservando parâmetros
   const hrefWith = (changes: (p: URLSearchParams) => void) => {
     const p = readSearchParamsFromHash();
 
     changes(p);
 
-    return buildHash(p);
+    return buildPeopleHashFromParams(p);
   };
 
-  // 🎨 Bloco render: JSX do painel de filtros
   return (
     <nav className="panel">
-      {/* Cabeçalho */}
       <p className="panel-heading">Filters</p>
 
-      {/* Filtro por sexo */}
       <p className="panel-tabs" data-cy="SexFilter">
         <a
           className={!sex ? 'is-active' : ''}
@@ -147,7 +118,6 @@ export const PeopleFilters: React.FC = () => {
         </a>
       </p>
 
-      {/* Campo de busca */}
       <div className="panel-block">
         <p className="control has-icons-left">
           <input
@@ -164,7 +134,6 @@ export const PeopleFilters: React.FC = () => {
         </p>
       </div>
 
-      {/* Filtro por séculos */}
       <div className="panel-block">
         <div className="level is-flex-grow-1 is-mobile" data-cy="CenturyFilter">
           <div className="level-left">
@@ -199,7 +168,6 @@ export const PeopleFilters: React.FC = () => {
             ))}
           </div>
 
-          {/* Botão All */}
           <div className="level-right ml-1">
             <a
               data-cy="centuryALL"
@@ -216,11 +184,10 @@ export const PeopleFilters: React.FC = () => {
         </div>
       </div>
 
-      {/* Reset geral */}
       <div className="panel-block">
         <a
           className="button is-link is-outlined is-fullwidth"
-          href={HASH_BASE}
+          href={buildPeopleHashFromParams(new URLSearchParams())}
           onClick={e => {
             e.preventDefault();
             resetAll();

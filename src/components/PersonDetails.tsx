@@ -24,12 +24,17 @@ export const PersonDetails: React.FC<Props> = ({ people }) => {
 
   const bornCentury = Math.floor(person.born / 100) + 1;
 
+  // Interpret missing order as 'asc' when a sort field is present
+  const sortParam = searchParams.get('sort') ?? null;
+  const rawOrder = searchParams.get('order');
+  const orderParam = sortParam && !rawOrder ? 'asc' : (rawOrder ?? null);
+
   const preservedParams = {
     query: searchParams.get('query') ?? null,
     sex: searchParams.get('sex') ?? null,
     centuries: searchParams.getAll('centuries'),
-    sort: searchParams.get('sort') ?? null,
-    order: searchParams.get('order') ?? null,
+    sort: sortParam,
+    order: orderParam,
   };
 
   const linkToPersonSlug = (name: string | null) => {

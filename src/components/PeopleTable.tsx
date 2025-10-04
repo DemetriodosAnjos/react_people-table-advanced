@@ -38,7 +38,7 @@ function applySortExplicit(field: string) {
   const currentOrder = params.get('order');
 
   if (currentField !== field) {
-    // trocar de campo: set sort=<field> e remover order (interpreted as asc)
+    // trocar de campo: set sort=<field> e remover order (interpretado como asc)
     params.set('sort', field);
     params.delete('order');
   } else {
@@ -51,7 +51,7 @@ function applySortExplicit(field: string) {
       params.delete('sort');
       params.delete('order');
     } else {
-      // caso improvável order='asc' explícito -> ir para desc
+      // caso improvável de order explícito diferente de 'desc' -> tratar como ir para desc
       params.set('order', 'desc');
     }
   }
@@ -81,13 +81,6 @@ export const PeopleTable: React.FC<Props> = ({
     const onHashChange = () => {
       const fromHash = currentSelectedSlugFromHash();
 
-      /*console.log(
-        '[HASH_CHANGE]',
-        'window.location.hash=',
-        typeof window !== 'undefined' ? window.location.hash : '',
-        'slugFromHash=',
-        fromHash,
-      );*/
       setSelectedSlug(fromHash);
     };
 
@@ -100,13 +93,6 @@ export const PeopleTable: React.FC<Props> = ({
   useEffect(() => {
     const slug = currentSelectedSlugFromHash();
 
-    /*console.log(
-      '[MOUNT]',
-      'window.location.hash=',
-      typeof window !== 'undefined' ? window.location.hash : '',
-      'initialSlug=',
-      slug,
-    );*/
     setSelectedSlug(slug);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -116,15 +102,6 @@ export const PeopleTable: React.FC<Props> = ({
     if (people && people.length) {
       const slugFromHash = currentSelectedSlugFromHash();
 
-      /* console.log(
-        '[PEOPLE ARRIVED]',
-        'selectedSlug(before)=',
-        selectedSlug,
-        'slugFromHash=',
-        slugFromHash,
-        'peopleSlugs=',
-        people.map(p => p.slug).slice(0, 20),
-      );*/
       if (slugFromHash) {
         setSelectedSlug(slugFromHash);
       }
@@ -147,16 +124,6 @@ export const PeopleTable: React.FC<Props> = ({
 
   const normalize = (s: unknown) =>
     s === null || s === undefined ? null : String(s).trim();
-
-  /*console.log(
-    '[RENDER]',
-    'selectedSlug=',
-    selectedSlug,
-    'hash=',
-    typeof window !== 'undefined' ? window.location.hash : '',
-    'peopleCount=',
-    people?.length ?? 0,
-  );*/
 
   const filteredPeople = useMemo(() => {
     if (!people) {
@@ -198,7 +165,7 @@ export const PeopleTable: React.FC<Props> = ({
         switch (sortField) {
           case 'name':
             return person.name ?? '';
-          case 'sex':
+          case 'sexo':
             return person.sex ?? '';
           case 'born':
             return person.born ?? 0;
@@ -241,7 +208,7 @@ export const PeopleTable: React.FC<Props> = ({
             applySortExplicit={applySortExplicit}
           />
           <SortHeader
-            field="sex"
+            field="sexo"
             label="Sex"
             sortField={sortField}
             sortOrder={sortOrder}
@@ -302,13 +269,16 @@ export const PeopleTable: React.FC<Props> = ({
                 <a
                   className={`is-clickable ${nameClass}`}
                   onClick={() => {
-                    const hasParams = readSearchParamsFromHash();
-                    const qs = hasParams.toString();
+                    const clickParams = readSearchParamsFromHash();
+
+                    clickParams.delete('page');
+                    const qs = clickParams.toString();
                     const newHash = qs
                       ? `#/people/${person.slug}?${qs}`
                       : `#/people/${person.slug}`;
 
                     history.replaceState(null, '', newHash);
+                    window.dispatchEvent(new HashChangeEvent('hashchange'));
                     setSelectedSlug(person.slug);
                   }}
                 >

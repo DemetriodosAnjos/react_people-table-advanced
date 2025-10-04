@@ -15,8 +15,12 @@ export function readSearchParamsFromHash(): URLSearchParams {
  * Constrói hash preservando slug atual se existir.
  * Se a hash atual for algo como "#/people/<slug>?..." então o slug será mantido.
  * Caso contrário retorna "#/people" ou "#/people?..." dependendo de params.
+ * Antes de serializar, remove parâmetros residuais que não devem ser persistidos, como sortCycle.
  */
 export function buildPeopleHashFromParams(params: URLSearchParams): string {
+  // garantir remoção de parâmetros não desejados
+  params.delete('sortCycle');
+
   if (typeof window === 'undefined') {
     const qs = params.toString();
 

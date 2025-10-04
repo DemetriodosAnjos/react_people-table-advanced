@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Loader } from './Loader/Loader';
 import { PeopleTable } from './PeopleTable';
 import { PeopleFilters } from './PeopleFilters';
 import { Person } from '../types/Person';
+import { readSearchParamsFromHash } from '../utils/hash';
 
 type Props = {
   people: Person[] | null;
@@ -16,55 +17,21 @@ export const PeoplePage: React.FC<Props> = ({ people, loading, error }) => {
   const [centuryFilters, setCenturyFilters] = useState<string[]>([]);
 
   useEffect(() => {
-    const onHashChange = () => {
-      const params = new URLSearchParams(
-        window.location.hash.split('?')[1] ?? '',
-      );
+    const applyParams = () => {
+      const params = readSearchParamsFromHash();
 
       setQuery(params.get('query') ?? '');
       setSexFilter(params.get('sex'));
       setCenturyFilters(params.getAll('centuries'));
     };
 
-    window.addEventListener('hashchange', onHashChange);
-    onHashChange();
+    window.addEventListener('hashchange', applyParams);
+    applyParams();
 
-    return () => window.removeEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', applyParams);
   }, []);
 
-  const filteredPeople = useMemo(() => {
-    if (!people) {
-      return [];
-    }
-
-    const includes = (s?: string | null) =>
-      (s ?? '').toString().toLowerCase().includes(query.toLowerCase());
-
-    return people.filter(p => {
-      const matchesQuery =
-        !query ||
-        includes(p.name) ||
-        includes(p.motherName) ||
-        includes(p.fatherName);
-
-      const sexValue = String(p.sex ?? '')
-        .trim()
-        .toLowerCase();
-      const matchesSex =
-        !sexFilter ||
-        (sexFilter === 'm' && sexValue.startsWith('m')) ||
-        (sexFilter === 'f' && sexValue.startsWith('f'));
-
-      const bornCentury = Math.floor((p.born ?? 0) / 100) + 1;
-      const matchesCentury =
-        centuryFilters.length === 0 ||
-        centuryFilters.includes(String(bornCentury));
-
-      return matchesQuery && matchesSex && matchesCentury;
-    });
-  }, [people, query, sexFilter, centuryFilters]);
-
-  const shouldShowNoResultsMessage = people && filteredPeople.length === 0;
+  const shouldShowNoPeopleMessage = people && people.length === 0;
 
   return (
     <>
@@ -72,18 +39,10 @@ export const PeoplePage: React.FC<Props> = ({ people, loading, error }) => {
         <h1 className="title is-3">People Page</h1>
       </div>
 
-      {people && people.length === 0 && (
+      {shouldShowNoPeopleMessage && (
         <div className="box" data-cy="noPeopleMessage">
           <div className="notification is-warning has-text-centered">
             There are no people to show.
-          </div>
-        </div>
-      )}
-
-      {shouldShowNoResultsMessage && (
-        <div className="box" data-cy="no-results">
-          <div className="notification is-warning has-text-centered">
-            There are no people matching the current search criteria.
           </div>
         </div>
       )}
@@ -99,10 +58,9 @@ export const PeoplePage: React.FC<Props> = ({ people, loading, error }) => {
               </div>
             ) : (
               !loading &&
-              people &&
-              filteredPeople.length > 0 && (
+              people && (
                 <PeopleTable
-                  people={filteredPeople}
+                  people={people}
                   loading={loading}
                   error={error}
                   sexFilter={sexFilter}
