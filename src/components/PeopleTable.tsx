@@ -1,3 +1,4 @@
+// src/components/PeopleTable.tsx
 import React, { useMemo, useEffect, useState } from 'react';
 import { Person } from '../types/Person';
 import './PeopleTable.scss';
@@ -18,15 +19,13 @@ type Props = {
 
 function currentSelectedSlugFromHash(): string | null {
   const hash = typeof window !== 'undefined' ? window.location.hash : '';
-  const cleanHash = hash.split('?')[0]; // remove query params
+  const cleanHash = hash.split('?')[0];
   const parts = cleanHash.split('/');
 
-  // PRIORIZA slug em /people/<slug>
   if (parts.length > 2 && parts[1] === 'people') {
     return parts[2];
   }
 
-  // fallback para query param selected (compatibilidade)
   const params = readSearchParamsFromHash();
 
   return params.get('selected');
@@ -38,25 +37,19 @@ function applySortExplicit(field: string) {
   const currentOrder = params.get('order');
 
   if (currentField !== field) {
-    // trocar de campo: set sort=<field> e remover order (interpretado como asc)
     params.set('sort', field);
     params.delete('order');
   } else {
-    // mesmo campo
     if (!currentOrder) {
-      // sem order -> definir order=desc
       params.set('order', 'desc');
     } else if (currentOrder === 'desc') {
-      // order=desc -> limpar sort e order
       params.delete('sort');
       params.delete('order');
     } else {
-      // caso improvável de order explícito diferente de 'desc' -> tratar como ir para desc
       params.set('order', 'desc');
     }
   }
 
-  // remover resquícios de sortCycle se existirem
   params.delete('sortCycle');
 
   const newHash = buildPeopleHashFromParams(params);
@@ -69,6 +62,7 @@ function applySortExplicit(field: string) {
 
 export const PeopleTable: React.FC<Props> = ({
   people,
+  error,
   sexFilter,
   query,
   centuryFilters = [],
@@ -89,7 +83,6 @@ export const PeopleTable: React.FC<Props> = ({
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // garantia de sincronização inicial em todos os ambientes (mantém a lógica original)
   useEffect(() => {
     const slug = currentSelectedSlugFromHash();
 
@@ -97,7 +90,6 @@ export const PeopleTable: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // quando os dados chegam, garantir que selectedSlug reflita a URL atual (resolve timing)
   useEffect(() => {
     if (people && people.length) {
       const slugFromHash = currentSelectedSlugFromHash();
@@ -109,7 +101,6 @@ export const PeopleTable: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people]);
 
-  // leitura de params / definição de sortField e sortOrder
   const params = readSearchParamsFromHash();
   const sortField = params.get('sort');
   const orderParam = params.get('order');
@@ -193,6 +184,15 @@ export const PeopleTable: React.FC<Props> = ({
     });
   }, [people, query, sexFilter, centuryFilters, sortField, sortOrder]);
 
+  // não renderizar tabela quando não há dados carregados, quando a lista está vazia ou quando há erro
+  if (
+    !people ||
+    (Array.isArray(people) && people.length === 0) ||
+    Boolean(error)
+  ) {
+    return null;
+  }
+
   return (
     <table
       className="table is-striped is-hoverable is-fullwidth"
@@ -241,7 +241,6 @@ export const PeopleTable: React.FC<Props> = ({
         {filteredPeople.map((person, idx) => {
           const key = person.id ?? person.slug ?? `person-${idx}`;
 
-          // comparação normalizada (não altera parsing/URL)
           const isSelected =
             normalize(selectedSlug) !== null &&
             normalize(selectedSlug) === normalize(person.slug);
